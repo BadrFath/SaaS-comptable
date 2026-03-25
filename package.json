@@ -1,0 +1,12 @@
+{
+  "name": "nv-saas",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "start": "npm --prefix backend start",
+    "start:frontend": "serve -s frontend/dist -l 10000"
+  },
+  "dependencies": {
+    "serve": "^14.2.6"
+  }
+}
