@@ -19,7 +19,7 @@ const fpsConfig = {
   redirectUri: process.env.FPS_REDIRECT_URI || "",
   scope: process.env.FPS_SCOPE || "openid profile",
   keyId: process.env.FPS_KEY_ID || "",
-  privateKeyPem: process.env.FPS_PRIVATE_KEY_PEM || "",
+  privateKeyPem: (process.env.FPS_PRIVATE_KEY_PEM || "").replace(/\\n/g, "\n"),
   claimsEcbField: process.env.FPS_CLAIMS_ECB_FIELD || "ecb",
   expectedIssuer: process.env.FPS_EXPECTED_ISSUER || "",
   authUrl: endpoints[fpsEnv].authorization,
