@@ -27,6 +27,7 @@ function isPlaceholder(value) {
 
   return (
     normalized.includes("your-") ||
+    normalized.includes("replace_with") ||
     normalized === "changeme" ||
     normalized.includes("example") ||
     normalized.includes("-----begin private key-----\\n...\\n-----end private key-----")
