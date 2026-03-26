@@ -1,13 +1,81 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const AUTH_TOKEN_STORAGE_KEY = "nv_saas_auth_token";
 
 function apiUrl(path) {
   return `${API_BASE_URL}${path}`;
 }
 
+function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || "";
+}
+
+function setAuthToken(token) {
+  localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, String(token || ""));
+}
+
+function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+}
+
+function withAuthHeaders(extraHeaders = {}) {
+  const token = getAuthToken();
+  return {
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
+async function loginWithPassword({ email, password }) {
+  const response = await fetch(apiUrl("/api/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || "Connexion impossible");
+  }
+
+  if (!data.token) {
+    throw new Error("Token de session manquant dans la reponse");
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+async function fetchCurrentUser() {
+  const response = await fetch(apiUrl("/api/auth/me"), {
+    headers: withAuthHeaders()
+  });
+
+  if (!response.ok) {
+    clearAuthToken();
+    throw new Error("Session invalide");
+  }
+
+  return response.json();
+}
+
+async function logout() {
+  const token = getAuthToken();
+  clearAuthToken();
+
+  if (!token) {
+    return;
+  }
+
+  await fetch(apiUrl("/api/auth/logout"), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  }).catch(() => {});
+}
+
 async function startFpsConnection(ecbNumber) {
   const response = await fetch(apiUrl("/api/fps/connect/start"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ ecbNumber })
   });
 
@@ -20,7 +88,9 @@ async function startFpsConnection(ecbNumber) {
 }
 
 async function fetchMandants() {
-  const response = await fetch(apiUrl("/api/fps/mandants"));
+  const response = await fetch(apiUrl("/api/fps/mandants"), {
+    headers: withAuthHeaders()
+  });
   if (!response.ok) {
     throw new Error("Impossible de charger les mandants");
   }
@@ -79,3 +149,4 @@ async function buildFallbackAlerts() {
 }
 
 export { startFpsConnection, fetchMandants, fetchAlerts, fetchSignals };
+export { loginWithPassword, fetchCurrentUser, logout, getAuthToken, clearAuthToken };

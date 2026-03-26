@@ -1,9 +1,12 @@
-import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { fetchCurrentUser, getAuthToken, loginWithPassword, logout } from "./api";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { ConnectMandantPage } from "./pages/ConnectMandantPage.jsx";
 import { ConnectResultPage } from "./pages/ConnectResultPage.jsx";
 import { AlertsPage } from "./pages/AlertsPage.jsx";
 import { AnalysisPage } from "./pages/AnalysisPage.jsx";
+import { LoginPage } from "./pages/LoginPage.jsx";
 
 const navItems = [
   { to: "/", label: "Dashboard" },
@@ -12,7 +15,7 @@ const navItems = [
   { to: "/connect", label: "Connecter" }
 ];
 
-function AppShell({ children }) {
+function AppShell({ children, isAuthenticated, currentUser, onLogout }) {
   const location = useLocation();
 
   return (
@@ -43,8 +46,20 @@ function AppShell({ children }) {
                   </Link>
                 );
               })}
+              {isAuthenticated && (
+                <button
+                  className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:bg-white"
+                  onClick={onLogout}
+                  type="button"
+                >
+                  Deconnexion
+                </button>
+              )}
             </nav>
           </div>
+          {isAuthenticated && (
+            <p className="mt-2 text-xs text-slate-600">Session: {currentUser?.fullName || currentUser?.email || "Utilisateur"}</p>
+          )}
         </header>
         <main className="animate-rise">{children}</main>
       </div>
@@ -53,15 +68,92 @@ function AppShell({ children }) {
 }
 
 export default function App() {
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    async function initSession() {
+      if (!getAuthToken()) {
+        setIsCheckingSession(false);
+        return;
+      }
+
+      try {
+        const payload = await fetchCurrentUser();
+        setCurrentUser(payload.user || null);
+      } catch (_error) {
+        setCurrentUser(null);
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+
+    initSession();
+  }, []);
+
+  async function handleLogin({ email, password }) {
+    try {
+      setIsLoggingIn(true);
+      setAuthError("");
+      const payload = await loginWithPassword({ email, password });
+      setCurrentUser(payload.user || null);
+    } catch (error) {
+      setAuthError(error.message || "Connexion impossible");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  async function handleLogout() {
+    await logout();
+    setCurrentUser(null);
+  }
+
+  if (isCheckingSession) {
+    return (
+      <AppShell currentUser={null} isAuthenticated={false} onLogout={handleLogout}>
+        <section className="rounded-2xl border border-white/85 bg-white/85 p-5 text-sm text-slate-600 shadow-soft">
+          Verification de la session en cours...
+        </section>
+      </AppShell>
+    );
+  }
+
+  const isAuthenticated = Boolean(currentUser?.id || currentUser?.accountantId);
+
   return (
-    <AppShell>
+    <AppShell currentUser={currentUser} isAuthenticated={isAuthenticated} onLogout={handleLogout}>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/connect" element={<ConnectMandantPage />} />
-          <Route path="/alerts" element={<AlertsPage />} />
-          <Route path="/analysis" element={<AnalysisPage />} />
-          <Route path="/connect/success" element={<ConnectResultPage mode="success" />} />
-          <Route path="/connect/error" element={<ConnectResultPage mode="error" />} />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate replace to="/" />
+              ) : (
+                <LoginPage
+                  defaultEmail="demo-accountant@nv-saas.local"
+                  error={authError}
+                  isLoading={isLoggingIn}
+                  onLogin={handleLogin}
+                />
+              )
+            }
+          />
+          <Route path="/" element={isAuthenticated ? <DashboardPage /> : <Navigate replace to="/login" />} />
+          <Route path="/connect" element={isAuthenticated ? <ConnectMandantPage /> : <Navigate replace to="/login" />} />
+          <Route path="/alerts" element={isAuthenticated ? <AlertsPage /> : <Navigate replace to="/login" />} />
+          <Route path="/analysis" element={isAuthenticated ? <AnalysisPage /> : <Navigate replace to="/login" />} />
+          <Route
+            path="/connect/success"
+            element={isAuthenticated ? <ConnectResultPage mode="success" /> : <Navigate replace to="/login" />}
+          />
+          <Route
+            path="/connect/error"
+            element={isAuthenticated ? <ConnectResultPage mode="error" /> : <Navigate replace to="/login" />}
+          />
+          <Route path="*" element={<Navigate replace to={isAuthenticated ? "/" : "/login"} />} />
         </Routes>
     </AppShell>
   );

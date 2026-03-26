@@ -58,7 +58,14 @@ async function callTokenEndpoint(body) {
   return response.json();
 }
 
-async function persistTokenSet({ ecbNumber, tokenSet, fallbackCompanyName, consentGivenAt, consentGivenBy }) {
+async function persistTokenSet({
+  ecbNumber,
+  accountantId,
+  tokenSet,
+  fallbackCompanyName,
+  consentGivenAt,
+  consentGivenBy
+}) {
   const now = Date.now();
   const expiresInMs = Number(tokenSet.expires_in || 300) * 1000;
 
@@ -66,9 +73,8 @@ async function persistTokenSet({ ecbNumber, tokenSet, fallbackCompanyName, conse
     throw new Error("Token response missing access_token or refresh_token");
   }
 
-  const accountantId = process.env.ACCOUNTANT_DEMO_ID;
   if (!accountantId) {
-    throw new Error("ACCOUNTANT_DEMO_ID is required");
+    throw new Error("accountantId is required to persist FPS tokens");
   }
 
   await upsertMandantTokens({
@@ -84,7 +90,11 @@ async function persistTokenSet({ ecbNumber, tokenSet, fallbackCompanyName, conse
   });
 }
 
-function buildAuthorizationUrl(ecbNumber) {
+function buildAuthorizationUrl(ecbNumber, accountantId) {
+  if (!accountantId) {
+    throw new Error("Authenticated accountant is required");
+  }
+
   const missing = [
     !fpsConfig.clientId || isPlaceholder(fpsConfig.clientId) ? "FPS_CLIENT_ID" : null,
     !fpsConfig.redirectUri || isPlaceholder(fpsConfig.redirectUri) ? "FPS_REDIRECT_URI" : null,
@@ -113,6 +123,7 @@ function buildAuthorizationUrl(ecbNumber) {
   };
 
   saveLoginFlow(state, {
+    accountantId,
     ecbNumber,
     nonce,
     codeVerifier
@@ -138,6 +149,9 @@ async function exchangeAuthorizationCode({ code, state }) {
   if (!flow) {
     throw new Error("Invalid or expired state");
   }
+  if (!flow.accountantId) {
+    throw new Error("Missing authenticated accountant context for this state");
+  }
 
   const clientAssertion = makeClientAssertion();
 
@@ -157,6 +171,7 @@ async function exchangeAuthorizationCode({ code, state }) {
 
     await persistTokenSet({
       ecbNumber: flow.ecbNumber,
+      accountantId: flow.accountantId,
       tokenSet,
       fallbackCompanyName: tokenSet.customerName || null,
       consentGivenAt: new Date().toISOString(),
@@ -207,6 +222,7 @@ async function refreshMandantByEcb(ecbNumber) {
     const tokenSet = await callTokenEndpoint(body);
     await persistTokenSet({
       ecbNumber,
+      accountantId: mandant.accountant_id,
       tokenSet,
       fallbackCompanyName: mandant.company_name,
       consentGivenAt: mandant.consent_given_at,

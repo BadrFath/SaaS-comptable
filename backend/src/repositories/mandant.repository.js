@@ -82,7 +82,11 @@ async function findMandantByEcb(ecbNumber) {
   return result.rows[0] || null;
 }
 
-async function listMandantsSummary() {
+async function listMandantsSummary(accountantId) {
+  if (!accountantId) {
+    throw new Error("accountantId is required");
+  }
+
   const query = `
     SELECT
       m.ecb_number,
@@ -94,11 +98,12 @@ async function listMandantsSummary() {
       COUNT(a.id) FILTER (WHERE a.statut = 'active' AND a.niveau IN ('warning', 'critical')) AS active_alert_count
     FROM mandants m
     LEFT JOIN alerts a ON a.mandant_ecb = m.ecb_number
+    WHERE m.accountant_id = $1::uuid
     GROUP BY m.ecb_number, m.company_name, m.status, m.token_expiry, m.consent_given_at, m.last_sync_at
     ORDER BY m.company_name NULLS LAST, m.ecb_number
   `;
 
-  const result = await db.query(query);
+  const result = await db.query(query, [accountantId]);
   return result.rows.map((row) => ({
     ecbNumber: row.ecb_number,
     companyName: row.company_name,

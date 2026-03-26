@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { authRouter } from "./routes/auth.routes.js";
 import { fpsRouter } from "./routes/fps.routes.js";
 
 const app = express();
@@ -30,6 +31,7 @@ app.get("/.well-known/jwks.json", (_req, res) => {
   return res.sendFile(jwksPath);
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/fps", fpsRouter);
 
 if (hasFrontendBuild) {

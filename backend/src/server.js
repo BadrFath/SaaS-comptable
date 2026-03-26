@@ -1,7 +1,9 @@
 import "./config/env.js";
 import { app } from "./app.js";
+import { authConfig } from "./config/auth.config.js";
 import { verifyDatabaseConnection } from "./config/db.js";
 import { ensureDemoAccount } from "./repositories/accountant.repository.js";
+import { hashPassword } from "./utils/authCrypto.js";
 
 const port = Number(process.env.PORT || 4000);
 
@@ -10,7 +12,12 @@ async function bootstrap() {
     await verifyDatabaseConnection();
 
     if (process.env.ACCOUNTANT_DEMO_ID) {
-      await ensureDemoAccount(process.env.ACCOUNTANT_DEMO_ID);
+      await ensureDemoAccount({
+        accountantId: process.env.ACCOUNTANT_DEMO_ID,
+        email: authConfig.demoEmail,
+        passwordHash: hashPassword(authConfig.demoPassword),
+        fullName: authConfig.demoFullName
+      });
     }
   } catch (error) {
     console.warn("Database bootstrap warning:", error.message || error);

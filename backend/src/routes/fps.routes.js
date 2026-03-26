@@ -1,17 +1,18 @@
 import { Router } from "express";
 import { buildAuthorizationUrl, exchangeAuthorizationCode } from "../services/fpsAuth.service.js";
-import { listMandantsSummary } from "../repositories/mandant.repository.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
+import { findMandantByEcb, listMandantsSummary } from "../repositories/mandant.repository.js";
 
 const fpsRouter = Router();
 
-fpsRouter.post("/connect/start", (req, res) => {
+fpsRouter.post("/connect/start", requireAuth, (req, res) => {
   try {
     const { ecbNumber } = req.body;
     if (!/^\d{10}$/.test(String(ecbNumber || ""))) {
       return res.status(400).json({ message: "ecbNumber must contain exactly 10 digits" });
     }
 
-    const authorizationUrl = buildAuthorizationUrl(String(ecbNumber));
+    const authorizationUrl = buildAuthorizationUrl(String(ecbNumber), req.auth.accountantId);
     return res.json({ authorizationUrl });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -36,16 +37,16 @@ fpsRouter.get("/connect/callback", async (req, res) => {
   }
 });
 
-fpsRouter.get("/mandants", async (_req, res) => {
+fpsRouter.get("/mandants", requireAuth, async (req, res) => {
   try {
-    const rows = await listMandantsSummary();
+    const rows = await listMandantsSummary(req.auth.accountantId);
     return res.json({ data: rows });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 });
 
-fpsRouter.post("/tokens/refresh", async (req, res) => {
+fpsRouter.post("/tokens/refresh", requireAuth, async (req, res) => {
   try {
     const { enqueueBulkRefresh, enqueueRefreshForMandant } = await import("../workers/queues.js");
     const { ecbNumber } = req.body || {};
@@ -54,6 +55,12 @@ fpsRouter.post("/tokens/refresh", async (req, res) => {
       if (!/^\d{10}$/.test(String(ecbNumber))) {
         return res.status(400).json({ message: "ecbNumber must contain exactly 10 digits" });
       }
+
+      const mandant = await findMandantByEcb(String(ecbNumber));
+      if (!mandant || mandant.accountant_id !== req.auth.accountantId) {
+        return res.status(404).json({ message: "Mandant not found for authenticated accountant" });
+      }
+
       await enqueueRefreshForMandant(String(ecbNumber));
       return res.status(202).json({ message: "Refresh job enqueued", scope: "single" });
     }
