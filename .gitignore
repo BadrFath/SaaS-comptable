@@ -26,3 +26,8 @@ Thumbs.db
 # Runtime
 coverage/
 *.pid
+
+# FPS key material
+backend/keys/fps-private.pem
+backend/keys/fps.env.snippet
+backend/keys/generate-fps-keys.cjs

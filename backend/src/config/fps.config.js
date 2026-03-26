@@ -1,5 +1,23 @@
 const fpsEnv = process.env.FPS_ENV === "prod" ? "prod" : "test";
 
+function normalizePrivateKeyPem(rawValue) {
+  let value = String(rawValue || "").trim();
+
+  if (!value) {
+    return "";
+  }
+
+  // .env values are sometimes wrapped in quotes; strip only matching wrappers.
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1);
+  }
+
+  return value.replace(/\\n/g, "\n").trim();
+}
+
 const endpoints = {
   test: {
     authorization: process.env.FPS_AUTH_TEST_URL || "https://fediamapi-a.minfin.be/sso/oauth2/authorize",
@@ -19,7 +37,7 @@ const fpsConfig = {
   redirectUri: process.env.FPS_REDIRECT_URI || "",
   scope: process.env.FPS_SCOPE || "openid profile",
   keyId: process.env.FPS_KEY_ID || "",
-  privateKeyPem: (process.env.FPS_PRIVATE_KEY_PEM || "").replace(/\\n/g, "\n"),
+  privateKeyPem: normalizePrivateKeyPem(process.env.FPS_PRIVATE_KEY_PEM),
   claimsEcbField: process.env.FPS_CLAIMS_ECB_FIELD || "ecb",
   expectedIssuer: process.env.FPS_EXPECTED_ISSUER || "",
   authUrl: endpoints[fpsEnv].authorization,
