@@ -1,7 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+function apiUrl(path) {
+  return `${API_BASE_URL}${path}`;
+}
 
 async function startFpsConnection(ecbNumber) {
-  const response = await fetch(`${API_BASE_URL}/api/fps/connect/start`, {
+  const response = await fetch(apiUrl("/api/fps/connect/start"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ecbNumber })
@@ -16,7 +20,7 @@ async function startFpsConnection(ecbNumber) {
 }
 
 async function fetchMandants() {
-  const response = await fetch(`${API_BASE_URL}/api/fps/mandants`);
+  const response = await fetch(apiUrl("/api/fps/mandants"));
   if (!response.ok) {
     throw new Error("Impossible de charger les mandants");
   }
@@ -27,7 +31,7 @@ async function fetchAlerts() {
   const fallback = await buildFallbackAlerts();
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/alerts`);
+    const response = await fetch(apiUrl("/api/alerts"));
     if (!response.ok) {
       return fallback;
     }
