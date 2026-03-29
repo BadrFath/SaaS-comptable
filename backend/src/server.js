@@ -15,7 +15,7 @@ async function bootstrap() {
       await ensureDemoAccount({
         accountantId: process.env.ACCOUNTANT_DEMO_ID,
         email: authConfig.demoEmail,
-        passwordHash: hashPassword(authConfig.demoPassword),
+        passwordHash: await hashPassword(authConfig.demoPassword, authConfig.bcryptRounds),
         fullName: authConfig.demoFullName
       });
     }

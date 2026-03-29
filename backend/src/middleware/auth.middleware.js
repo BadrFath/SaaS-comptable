@@ -11,7 +11,7 @@ async function requireAuth(req, res, next) {
       return res.status(401).json({ message: "Missing or invalid Authorization header" });
     }
 
-    const payload = verifySessionToken(token, authConfig.jwtSecret);
+    const payload = verifySessionToken(token, authConfig.jwtSecret, authConfig.tokenIssuer);
     const accountant = await findAccountantById(payload.sub);
 
     if (!accountant) {

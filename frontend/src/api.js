@@ -45,6 +45,26 @@ async function loginWithPassword({ email, password }) {
   return data;
 }
 
+async function registerAccount({ email, password, fullName }) {
+  const response = await fetch(apiUrl("/api/auth/register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, fullName })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || "Inscription impossible");
+  }
+
+  if (!data.token) {
+    throw new Error("Token de session manquant dans la reponse");
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
 async function fetchCurrentUser() {
   const response = await fetch(apiUrl("/api/auth/me"), {
     headers: withAuthHeaders()
@@ -149,4 +169,4 @@ async function buildFallbackAlerts() {
 }
 
 export { startFpsConnection, fetchMandants, fetchAlerts, fetchSignals };
-export { loginWithPassword, fetchCurrentUser, logout, getAuthToken, clearAuthToken };
+export { loginWithPassword, registerAccount, fetchCurrentUser, logout, getAuthToken, clearAuthToken };

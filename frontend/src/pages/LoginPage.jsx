@@ -1,56 +1,148 @@
 import { useState } from "react";
 
-function LoginPage({ defaultEmail = "", isLoading = false, error = "", onLogin }) {
+function LoginPage({
+  defaultEmail = "",
+  isLoggingIn = false,
+  isRegistering = false,
+  loginError = "",
+  registerError = "",
+  registerSuccess = "",
+  onLogin,
+  onRegister
+}) {
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
+  const [registerFullName, setRegisterFullName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
 
-  async function onSubmit(event) {
+  async function onLoginSubmit(event) {
     event.preventDefault();
     await onLogin({ email, password });
   }
 
+  async function onRegisterSubmit(event) {
+    event.preventDefault();
+    await onRegister({
+      fullName: registerFullName,
+      email: registerEmail,
+      password: registerPassword
+    });
+  }
+
   return (
-    <section className="mx-auto mt-8 max-w-lg rounded-3xl border border-white/85 bg-white/85 p-6 shadow-floating backdrop-blur sm:p-7">
-      <h2 className="font-display text-2xl font-semibold">Connexion cabinet</h2>
-      <p className="mt-1 text-sm text-slate-600">Authentification interne requise avant l'acces aux API FPS.</p>
+    <section className="mx-auto mt-6 grid max-w-6xl gap-5 lg:grid-cols-2">
+      <article className="rounded-3xl border border-white/85 bg-white/85 p-6 shadow-floating backdrop-blur sm:p-7">
+        <div className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Espace cabinet</p>
+          <h2 className="font-display text-2xl font-semibold">Authentification</h2>
+          <p className="mt-1 text-sm text-slate-600">Connectez-vous pour acceder aux modules Dashboard, Alertes et Analyse.</p>
+        </div>
 
-      <form className="mt-5 space-y-3" onSubmit={onSubmit}>
-        <label className="block text-sm font-semibold text-slate-700" htmlFor="email">
-          Email
-        </label>
-        <input
-          autoComplete="username"
-          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
-          id="email"
-          placeholder="demo-accountant@nv-saas.local"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
+        <form className="space-y-3" onSubmit={onLoginSubmit}>
+          <label className="block text-sm font-semibold text-slate-700" htmlFor="email">
+            Email
+          </label>
+          <input
+            autoComplete="username"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
+            id="email"
+            placeholder="demo-accountant@nv-saas.local"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
 
-        <label className="block text-sm font-semibold text-slate-700" htmlFor="password">
-          Mot de passe
-        </label>
-        <input
-          autoComplete="current-password"
-          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
-          id="password"
-          placeholder="Votre mot de passe"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+          <label className="block text-sm font-semibold text-slate-700" htmlFor="password">
+            Mot de passe
+          </label>
+          <input
+            autoComplete="current-password"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
+            id="password"
+            placeholder="Votre mot de passe"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
 
-        {error && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{error}</p>}
+          {loginError && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{loginError}</p>}
 
-        <button
-          className="w-full rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 disabled:opacity-70"
-          disabled={isLoading}
-          type="submit"
-        >
-          {isLoading ? "Connexion..." : "Se connecter"}
-        </button>
-      </form>
+          <button
+            className="w-full rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 disabled:opacity-70"
+            disabled={isLoggingIn}
+            type="submit"
+          >
+            {isLoggingIn ? "Connexion..." : "Se connecter"}
+          </button>
+        </form>
+      </article>
+
+      <article className="rounded-3xl border border-white/85 bg-white/85 p-6 shadow-floating backdrop-blur sm:p-7">
+        <div className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Nouveau compte</p>
+          <h2 className="font-display text-2xl font-semibold">Inscription</h2>
+          <p className="mt-1 text-sm text-slate-600">Creez un compte professionnel pour votre cabinet.</p>
+        </div>
+
+        <form className="space-y-3" onSubmit={onRegisterSubmit}>
+          <label className="block text-sm font-semibold text-slate-700" htmlFor="register-fullname">
+            Nom complet
+          </label>
+          <input
+            autoComplete="name"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
+            id="register-fullname"
+            placeholder="Cabinet Expert Fiscal"
+            type="text"
+            value={registerFullName}
+            onChange={(event) => setRegisterFullName(event.target.value)}
+          />
+
+          <label className="block text-sm font-semibold text-slate-700" htmlFor="register-email">
+            Email professionnel
+          </label>
+          <input
+            autoComplete="email"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
+            id="register-email"
+            placeholder="contact@cabinet.be"
+            type="email"
+            value={registerEmail}
+            onChange={(event) => setRegisterEmail(event.target.value)}
+          />
+
+          <label className="block text-sm font-semibold text-slate-700" htmlFor="register-password">
+            Mot de passe
+          </label>
+          <input
+            autoComplete="new-password"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-accent"
+            id="register-password"
+            placeholder="Minimum 8 caracteres"
+            type="password"
+            value={registerPassword}
+            onChange={(event) => setRegisterPassword(event.target.value)}
+          />
+
+          {registerError && (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{registerError}</p>
+          )}
+          {registerSuccess && (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {registerSuccess}
+            </p>
+          )}
+
+          <button
+            className="w-full rounded-full border border-ink bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:-translate-y-0.5 disabled:opacity-70"
+            disabled={isRegistering}
+            type="submit"
+          >
+            {isRegistering ? "Inscription..." : "Creer mon compte"}
+          </button>
+        </form>
+      </article>
     </section>
   );
 }

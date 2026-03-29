@@ -18,6 +18,17 @@ async function ensureDemoAccount({ accountantId, email, passwordHash, fullName }
   ]);
 }
 
+async function createAccountant({ email, passwordHash, fullName }) {
+  const query = `
+    INSERT INTO accountants (email, password_hash, full_name)
+    VALUES ($1, $2, $3)
+    RETURNING id, email, full_name, created_at
+  `;
+
+  const result = await db.query(query, [String(email || "").toLowerCase(), passwordHash, fullName]);
+  return result.rows[0];
+}
+
 async function findAccountantByEmail(email) {
   const query = `
     SELECT id, email, password_hash, full_name, created_at
@@ -42,4 +53,4 @@ async function findAccountantById(accountantId) {
   return result.rows[0] || null;
 }
 
-export { ensureDemoAccount, findAccountantByEmail, findAccountantById };
+export { ensureDemoAccount, createAccountant, findAccountantByEmail, findAccountantById };

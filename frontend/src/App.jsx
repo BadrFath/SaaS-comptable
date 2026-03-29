@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { fetchCurrentUser, getAuthToken, loginWithPassword, logout } from "./api";
+import { fetchCurrentUser, getAuthToken, loginWithPassword, logout, registerAccount } from "./api";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { ConnectMandantPage } from "./pages/ConnectMandantPage.jsx";
 import { ConnectResultPage } from "./pages/ConnectResultPage.jsx";
@@ -30,30 +30,34 @@ function AppShell({ children, isAuthenticated, currentUser, onLogout }) {
               <h1 className="font-display text-2xl font-semibold sm:text-3xl">Cabinet cockpit fiscal</h1>
             </div>
             <nav className="flex flex-wrap gap-2">
-              {navItems.map((item) => {
-                const active = location.pathname === item.to;
-                return (
-                  <Link
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      active
-                        ? "bg-ink text-white shadow-soft"
-                        : "bg-white/80 text-ink hover:-translate-y-0.5 hover:bg-white"
-                    }`}
-                    key={item.to}
-                    to={item.to}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-              {isAuthenticated && (
+              {isAuthenticated ? (
+                <>
+                  {navItems.map((item) => {
+                    const active = location.pathname === item.to;
+                    return (
+                      <Link
+                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                          active
+                            ? "bg-ink text-white shadow-soft"
+                            : "bg-white/80 text-ink hover:-translate-y-0.5 hover:bg-white"
+                        }`}
+                        key={item.to}
+                        to={item.to}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
                 <button
-                  className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:bg-white"
+                  className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100"
                   onClick={onLogout}
                   type="button"
                 >
-                  Deconnexion
+                    Se deconnecter
                 </button>
+                </>
+              ) : (
+                <span className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white">Authentification requise</span>
               )}
             </nav>
           </div>
@@ -70,7 +74,10 @@ function AppShell({ children, isAuthenticated, currentUser, onLogout }) {
 export default function App() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [registerError, setRegisterError] = useState("");
+  const [registerSuccess, setRegisterSuccess] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -96,13 +103,29 @@ export default function App() {
   async function handleLogin({ email, password }) {
     try {
       setIsLoggingIn(true);
-      setAuthError("");
+      setLoginError("");
+      setRegisterSuccess("");
       const payload = await loginWithPassword({ email, password });
       setCurrentUser(payload.user || null);
     } catch (error) {
-      setAuthError(error.message || "Connexion impossible");
+      setLoginError(error.message || "Connexion impossible");
     } finally {
       setIsLoggingIn(false);
+    }
+  }
+
+  async function handleRegister({ fullName, email, password }) {
+    try {
+      setIsRegistering(true);
+      setRegisterError("");
+      setRegisterSuccess("");
+      const payload = await registerAccount({ fullName, email, password });
+      setCurrentUser(payload.user || null);
+      setRegisterSuccess("Inscription reussie. Session ouverte.");
+    } catch (error) {
+      setRegisterError(error.message || "Inscription impossible");
+    } finally {
+      setIsRegistering(false);
     }
   }
 
@@ -134,9 +157,13 @@ export default function App() {
               ) : (
                 <LoginPage
                   defaultEmail="demo-accountant@nv-saas.local"
-                  error={authError}
-                  isLoading={isLoggingIn}
+                  isLoggingIn={isLoggingIn}
+                  isRegistering={isRegistering}
+                  loginError={loginError}
+                  registerError={registerError}
+                  registerSuccess={registerSuccess}
                   onLogin={handleLogin}
+                  onRegister={handleRegister}
                 />
               )
             }
