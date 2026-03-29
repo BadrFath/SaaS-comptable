@@ -1,7 +1,7 @@
 import "./config/env.js";
 import { app } from "./app.js";
 import { authConfig } from "./config/auth.config.js";
-import { verifyDatabaseConnection } from "./config/db.js";
+import { ensureDatabaseSchema, verifyDatabaseConnection } from "./config/db.js";
 import { ensureDemoAccount } from "./repositories/accountant.repository.js";
 import { hashPassword } from "./utils/authCrypto.js";
 
@@ -10,6 +10,7 @@ const port = Number(process.env.PORT || 4000);
 async function bootstrap() {
   try {
     await verifyDatabaseConnection();
+    await ensureDatabaseSchema();
 
     if (process.env.ACCOUNTANT_DEMO_ID) {
       await ensureDemoAccount({
