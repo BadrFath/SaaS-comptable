@@ -10,6 +10,18 @@ Monorepo with two apps and a shared Postgres schema:
 - `database/schema.sql` — PostgreSQL schema applied automatically by the backend on bootstrap.
 - BullMQ + Redis — token refresh queue (`fps-token-refresh`) with an hourly cron registered by the worker.
 
+## Documentation référence (locale, non commitée)
+
+Le dossier `docs/` à la racine contient la documentation FPS (gitignored). Avant tout dev touchant à MyMinfin, Intervat ou le flow OIDC, consulter d'abord ces docs pour vérifier endpoints, rate limits, et règles métier :
+
+- `docs/spec_saas_comptable.docx` — Spécification produit complète (modules dashboard / alertes / analyse, table de correspondance documents → niveau d'alerte)
+- `docs/MMF-API-V09072025.docx` — API MyMinfin : search/download documents fiscaux, rate limits (1 search /10min /CBE), scénarios de test
+- `docs/INTERVAT-API-V09072025.docx` — API Intervat : soumission déclarations TVA en XML, erreurs business multilingues (fr/nl/de/en)
+- `docs/HOW-TO-ACCES-SPF-API-V25022025.docx` — Sécurité OAuth/OIDC FPS, business authorization (mandatee vs own data)
+- `docs/IAM-OIDC-flow.pdf` — Flow OIDC détaillé
+- `docs/PROCES-FPS-2025-05-26.docx` — Processus d'enregistrement/validation FPS (helpdesk ServiceNow, formulaires de test)
+- `docs/acces_api_legakte.docx` — Credentials OIDC client "legakte" (clientID, scopes, redirect URIs)
+
 ## Common commands
 
 Backend (run from `backend/`):
@@ -65,3 +77,10 @@ Backend `.env` (loaded from `backend/.env` by `config/env.js`):
 Frontend `.env`: `VITE_API_BASE_URL` (omit/empty for same-origin).
 
 `buildAuthorizationUrl` rejects placeholder values containing `your-`, `replace_with`, `changeme`, `example`, or the literal PEM template — set real values before testing the FPS flow.
+
+## Internationalisation (i18n)
+
+Le SaaS cible la Belgique : trois langues officielles à supporter à terme — FR / NL / DE.
+- UI actuellement FR uniquement, à étendre via `react-i18next`
+- Stocker la langue préférée par accountant (colonne à ajouter)
+- Les messages d'erreur business renvoyés par MyMinfin/Intervat sont déjà multilingues (fr/nl/de/en) — afficher la version correspondant à la langue de l'utilisateur
